@@ -45,15 +45,12 @@ LOCAL_AAPT_FLAGS := \
     --extra-packages android.support.v7.recyclerview
 
 #LOCAL_SDK_VERSION := current
-LOCAL_PACKAGE_NAME := Trebuchet
+LOCAL_PACKAGE_NAME := Perception
+
 LOCAL_PRIVILEGED_MODULE := true
+LOCAL_CERTIFICATE := platform
 
-# Sign the package when not using test-keys
-ifneq ($(DEFAULT_SYSTEM_DEV_CERTIFICATE),build/target/product/security/testkey)
-LOCAL_CERTIFICATE := cyngn-app
-endif
-
-LOCAL_AAPT_FLAGS += --rename-manifest-package com.cyanogenmod.trebuchet
+LOCAL_AAPT_FLAGS += --rename-manifest-package org.namelessrom.perception
 
 LOCAL_OVERRIDES_PACKAGES := Launcher3
 
