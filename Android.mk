@@ -46,11 +46,12 @@ LOCAL_AAPT_FLAGS := \
     --extra-packages android.support.v7.recyclerview
 
 #LOCAL_SDK_VERSION := current
-LOCAL_PACKAGE_NAME := Trebuchet
-LOCAL_PRIVILEGED_MODULE := true
-#LOCAL_CERTIFICATE := shared
+LOCAL_PACKAGE_NAME := Perception
 
-LOCAL_AAPT_FLAGS += --rename-manifest-package com.cyanogenmod.trebuchet
+LOCAL_PRIVILEGED_MODULE := true
+LOCAL_CERTIFICATE := platform
+
+LOCAL_AAPT_FLAGS += --rename-manifest-package org.namelessrom.perception
 
 LOCAL_OVERRIDES_PACKAGES := Launcher3
 
