@@ -42,11 +42,11 @@ LOCAL_PROTOC_FLAGS := --proto_path=$(LOCAL_PATH)/protos/
 
 # LOCAL_SDK_VERSION := 21
 
-LOCAL_PACKAGE_NAME := Trebuchet
+LOCAL_PACKAGE_NAME := Perception
 LOCAL_PRIVILEGED_MODULE := true
-#LOCAL_CERTIFICATE := shared
+LOCAL_CERTIFICATE := platform
 
-LOCAL_AAPT_FLAGS += --rename-manifest-package com.cyanogenmod.trebuchet
+LOCAL_AAPT_FLAGS += --rename-manifest-package org.namelessrom.perception
 
 LOCAL_OVERRIDES_PACKAGES := Launcher3
 
