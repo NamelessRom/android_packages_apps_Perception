@@ -156,9 +156,28 @@ public final class Utilities {
     }
 
     /**
-     * Returns a bitmap suitable for the all apps view. Used to convert pre-ICS
-     * icon bitmaps that are stored in the database (which were 74x74 pixels at hdpi size)
-     * to the proper size (48dp)
+     * Returns a bitmap suitable for the all apps view. If the package or the resource do not
+     * exist, it returns null.
+     */
+    static Bitmap createIconBitmap(String packageName, String resourceName, IconCache cache,
+            Context context) {
+        PackageManager packageManager = context.getPackageManager();
+        // the resource
+        try {
+            Resources resources = packageManager.getResourcesForApplication(packageName);
+            if (resources != null) {
+                final int id = resources.getIdentifier(resourceName, null, null);
+                return createIconBitmap(
+                        resources.getDrawableForDensity(id, cache.getFullResIconDpi()), context);
+            }
+        } catch (Exception e) {
+            // Icon not found.
+        }
+        return null;
+    }
+
+    /**
+     * Returns a bitmap which is of the appropriate size to be displayed as an icon
      */
     static Bitmap createIconBitmap(Bitmap icon, Context context) {
         int textureWidth = sIconTextureWidth;
