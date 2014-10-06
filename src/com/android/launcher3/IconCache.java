@@ -149,7 +149,7 @@ public class IconCache {
         return getFullResIcon(Resources.getSystem(), android.R.mipmap.sym_def_app_icon);
     }
 
-    public Drawable getFullResIcon(Resources resources, int iconId) {
+    private Drawable getFullResIcon(Resources resources, int iconId) {
         Drawable d;
         try {
             d = resources.getDrawableForDensity(iconId, mIconDpi, mContext.getTheme());
