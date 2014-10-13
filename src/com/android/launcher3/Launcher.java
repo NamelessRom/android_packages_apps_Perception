@@ -140,6 +140,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -2329,7 +2330,6 @@ public class Launcher extends Activity
         mWorkspace = null;
         mDragController = null;
 
-        PackageInstallerCompat.getInstance(this).onStop();
         LauncherAnimUtils.onDestroyActivity();
 
         unregisterReceiver(protectedAppsChangedReceiver);
@@ -5276,10 +5276,6 @@ public class Launcher extends Activity
             return;
         }
 
-        if (mWorkspace != null) {
-            mWorkspace.updateShortcutsAndWidgets(apps);
-        }
-
         if (!LauncherAppState.isDisableAllApps() &&
                 mAppsCustomizeContent != null) {
             mAppsCustomizeContent.updateApps(apps);
@@ -5299,10 +5295,19 @@ public class Launcher extends Activity
         if (waitUntilResume(r)) {
             return;
         }
+    }
 
-        if (mWorkspace != null) {
-            mWorkspace.updateShortcutsAndWidgets(apps);
+    @Override
+    public void bindWidgetsRestored(final ArrayList<LauncherAppWidgetInfo> widgets) {
+        Runnable r = new Runnable() {
+            public void run() {
+                bindWidgetsRestored(widgets);
+            }
+        };
+        if (waitUntilResume(r)) {
+            return;
         }
+        mWorkspace.widgetsRestored(widgets);
     }
 
     /**
@@ -5310,18 +5315,30 @@ public class Launcher extends Activity
      *
      * Implementation of the method from LauncherModel.Callbacks.
      */
-    public void bindShortcutsUpdated(final ArrayList<ShortcutInfo> shortcuts) {
+    @Override
+    public void bindShortcutsChanged(final ArrayList<ShortcutInfo> updated,
+            final ArrayList<ShortcutInfo> removed, final UserHandleCompat user) {
         Runnable r = new Runnable() {
             public void run() {
-                bindShortcutsUpdated(shortcuts);
+                bindShortcutsChanged(updated, removed, user);
             }
         };
         if (waitUntilResume(r)) {
             return;
         }
 
-        if (mWorkspace != null) {
-            mWorkspace.updateShortcuts(shortcuts);
+        if (!updated.isEmpty()) {
+            mWorkspace.updateShortcuts(updated);
+        }
+
+        if (!removed.isEmpty()) {
+            HashSet<ComponentName> removedComponents = new HashSet<ComponentName>();
+            for (ShortcutInfo si : removed) {
+                removedComponents.add(si.getTargetComponent());
+            }
+            mWorkspace.removeItemsByComponentName(removedComponents, user);
+            // Notify the drag controller
+            mDragController.onAppsRemoved(new ArrayList<String>(), removedComponents);
         }
     }
 
@@ -5372,18 +5389,22 @@ public class Launcher extends Activity
         }
 
         if (reason == 0) {
+            HashSet<ComponentName> removedComponents = new HashSet<ComponentName>();
+            for (AppInfo info : appInfos) {
+                removedComponents.add(info.componentName);
+            }
             if (!packageNames.isEmpty()) {
                 mWorkspace.removeItemsByPackageName(packageNames, user);
             }
-            if (!appInfos.isEmpty()) {
-                mWorkspace.removeItemsByApplicationInfo(appInfos, user);
+            if (!removedComponents.isEmpty()) {
+                mWorkspace.removeItemsByComponentName(removedComponents, user);
             }
+            // Notify the drag controller
+            mDragController.onAppsRemoved(packageNames, removedComponents);
+
         } else {
             mWorkspace.disableShortcutsByPackageName(packageNames, user, reason);
         }
-
-        // Notify the drag controller
-        mDragController.onAppsRemoved(packageNames, appInfos);
 
         // Update AllApps
         if (!LauncherAppState.isDisableAllApps() &&
