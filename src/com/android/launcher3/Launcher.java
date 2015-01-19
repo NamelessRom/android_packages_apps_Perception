@@ -114,7 +114,7 @@ import com.android.launcher3.compat.PackageInstallerCompat.PackageInstallInfo;
 import com.android.launcher3.compat.UserHandleCompat;
 import com.android.launcher3.compat.UserManagerCompat;
 import com.android.launcher3.PagedView.TransitionEffect;
-import com.android.launcher3.nameless.gestures.GestureFragment;
+import com.android.launcher3.nameless.LauncherPreferenceActivity;
 import com.android.launcher3.settings.SettingsProvider;
 
 import java.io.DataInputStream;
@@ -278,7 +278,6 @@ public class Launcher extends Activity
     private DynamicGridSizeFragment mDynamicGridSizeFragment;
     private LauncherClings mLauncherClings;
     protected HiddenFolderFragment mHiddenFolderFragment;
-    private GestureFragment mGestureFragment;
 
     private AppWidgetManagerCompat mAppWidgetManager;
     private LauncherAppWidgetHost mAppWidgetHost;
@@ -296,8 +295,6 @@ public class Launcher extends Activity
 
     private Hotseat mHotseat;
     private ViewGroup mOverviewPanel;
-    private View mDarkPanel;
-    OverviewSettingsPanel mOverviewSettingsPanel;
 
     private View mAllAppsButton;
 
@@ -419,19 +416,6 @@ public class Launcher extends Activity
 
     FocusIndicatorView mFocusHandler;
 
-    public Animator.AnimatorListener mAnimatorListener = new Animator.AnimatorListener() {
-        @Override
-        public void onAnimationStart(Animator arg0) {}
-        @Override
-        public void onAnimationRepeat(Animator arg0) {}
-        @Override
-        public void onAnimationEnd(Animator arg0) {
-            mDarkPanel.setVisibility(View.GONE);
-        }
-        @Override
-        public void onAnimationCancel(Animator arg0) {}
-    };
-
     public static boolean isPropertyEnabled(String propertyName) {
         return Log.isLoggable(propertyName, Log.VERBOSE);
     }
@@ -475,9 +459,6 @@ public class Launcher extends Activity
         super.onCreate(savedInstanceState);
 
         initializeDynamicGrid();
-        mHideIconLabels = SettingsProvider.getBoolean(this,
-                SettingsProvider.SETTINGS_UI_HOMESCREEN_HIDE_ICON_LABELS,
-                R.bool.preferences_interface_homescreen_hide_icon_labels_default);
 
         // the LauncherApplication should call this, but in case of Instrumentation it might not be present yet
         mSharedPrefs = getSharedPreferences(LauncherAppState.getSharedPreferencesKey(),
@@ -1129,6 +1110,10 @@ public class Launcher extends Activity
             mWaitingForResume.setStayPressed(false);
         }
 
+        // Update our screen orientation in case we were commint from settings
+        loadOrientation();
+        unlockScreenOrientation(true);
+
         // It is possible that widgets can receive updates while launcher is not in the foreground.
         // Consequently, the widgets will be inflated in the orientation of the foreground activity
         // (framework issue). On resuming, we ensure that any widgets are inflated for the current
@@ -1173,10 +1158,6 @@ public class Launcher extends Activity
             mDynamicGridSizeFragment.setSize();
             mWorkspace.hideOutlines();
         }
-        f = getFragmentManager().findFragmentByTag(GestureFragment.TAG);
-        if (f != null) {
-            mGestureFragment.setGestureDone();
-        }
         Fragment f1 = getFragmentManager().findFragmentByTag(
                 HiddenFolderFragment.HIDDEN_FOLDER_FRAGMENT);
         if (f1 != null && !mHiddenFolderAuth) {
@@ -1188,6 +1169,14 @@ public class Launcher extends Activity
             mHiddenFolderAuth = false;
         }
 
+        final boolean shouldReload = SettingsProvider.getBooleanCustomDefault(this,
+                SettingsProvider.SETTINGS_CHANGED, false);
+        if (shouldReload) {
+            setUpdateDynamicGrid();
+
+            // reset state
+            SettingsProvider.putBoolean(this, SettingsProvider.SETTINGS_CHANGED, false);
+        }
         updateGridIfNeeded();
     }
 
@@ -1214,6 +1203,7 @@ public class Launcher extends Activity
         if (decorView != null) {
             if (shouldHideStatusBar()) {
                 decorView.setSystemUiVisibility(View.SYSTEM_UI_FLAG_FULLSCREEN
+                        | View.SYSTEM_UI_FLAG_LAYOUT_STABLE
                         | View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY);
             } else {
                 decorView.setSystemUiVisibility(View.SYSTEM_UI_FLAG_VISIBLE);
@@ -1223,7 +1213,7 @@ public class Launcher extends Activity
 
     public boolean shouldHideStatusBar() {
         return SettingsProvider.getBooleanCustomDefault(this,
-                SettingsProvider.SETTINGS_UI_HOMESCREEN_HIDE_STATUS_BAR, false);
+                SettingsProvider.SETTINGS_UI_GLOBAL_HIDE_STATUS_BAR, false);
     }
 
     QSBScroller mQsbScroller = new QSBScroller() {
@@ -1294,9 +1284,9 @@ public class Launcher extends Activity
                         mAppsCustomizeContent.setSortMode(AppsCustomizePagedView.SortMode.LaunchCount);
                         break;
                 }
-                mOverviewSettingsPanel.notifyDataSetInvalidated();
-                SettingsProvider.putInt(getBaseContext(), SettingsProvider.SETTINGS_UI_DRAWER_SORT_MODE,
-                        mAppsCustomizeContent.getSortMode().getValue());
+                SettingsProvider.putString(getBaseContext(),
+                        SettingsProvider.SETTINGS_UI_DRAWER_SORT_MODE,
+                        String.valueOf(mAppsCustomizeContent.getSortMode().getValue()));
                 return true;
             }
         });
@@ -1317,13 +1307,11 @@ public class Launcher extends Activity
         int gridSize = SettingsProvider.getIntCustomDefault(this,
                 SettingsProvider.SETTINGS_UI_DYNAMIC_GRID_SIZE, 0);
         if (gridSize != size.getValue()) {
-            SettingsProvider.putInt(this,
-                    SettingsProvider.SETTINGS_UI_DYNAMIC_GRID_SIZE, size.getValue());
+            SettingsProvider.putString(this, SettingsProvider.SETTINGS_UI_DYNAMIC_GRID_SIZE,
+                    String.valueOf(size.getValue()));
 
             setUpdateDynamicGrid();
         }
-
-        mOverviewSettingsPanel.notifyDataSetInvalidated();
 
         FragmentTransaction fragmentTransaction = getFragmentManager().beginTransaction();
         Configuration config = getResources().getConfiguration();
@@ -1336,13 +1324,6 @@ public class Launcher extends Activity
         }
         fragmentTransaction
                 .remove(mDynamicGridSizeFragment).commit();
-
-        mDarkPanel.setVisibility(View.VISIBLE);
-        ObjectAnimator anim = ObjectAnimator.ofFloat(
-                mDarkPanel, "alpha", 0.3f, 0.0f);
-        anim.start();
-        anim.addListener(mAnimatorListener);
-
     }
 
     public void onClickTransitionEffectButton(View v, final boolean pageOrDrawer) {
@@ -1360,16 +1341,6 @@ public class Launcher extends Activity
         fragmentTransaction.commit();
     }
 
-    public void onClickGestureButton() {
-        final FragmentManager fragmentManager = getFragmentManager();
-        final FragmentTransaction fragmentTransaction = fragmentManager.beginTransaction();
-
-        mGestureFragment = new GestureFragment();
-        fragmentTransaction.setCustomAnimations(0, 0);
-        fragmentTransaction.replace(R.id.launcher, mGestureFragment, GestureFragment.TAG);
-        fragmentTransaction.commit();
-    }
-
     public void setTransitionEffect(boolean pageOrDrawer, String newTransitionEffect) {
         String mSettingsProviderValue = pageOrDrawer ?
                 SettingsProvider.SETTINGS_UI_DRAWER_SCROLLING_TRANSITION_EFFECT
@@ -1377,13 +1348,8 @@ public class Launcher extends Activity
         PagedView pagedView = pageOrDrawer ? mAppsCustomizeContent : mWorkspace;
 
         SettingsProvider
-                .get(getApplicationContext())
-                .edit()
-                .putString(mSettingsProviderValue,
-                        newTransitionEffect).commit();
+                .putString(getApplicationContext(), mSettingsProviderValue, newTransitionEffect);
         TransitionEffect.setFromString(pagedView, newTransitionEffect);
-
-        mOverviewSettingsPanel.notifyDataSetInvalidated();
 
         FragmentTransaction fragmentTransaction = getFragmentManager().beginTransaction();
         Configuration config = getResources().getConfiguration();
@@ -1396,23 +1362,6 @@ public class Launcher extends Activity
         }
         fragmentTransaction
                 .remove(mTransitionEffectsFragment).commit();
-
-        mDarkPanel.setVisibility(View.VISIBLE);
-        ObjectAnimator anim = ObjectAnimator.ofFloat(
-                mDarkPanel, "alpha", 0.3f, 0.0f);
-        anim.start();
-        anim.addListener(mAnimatorListener);
-    }
-
-    public void setGestureDone() {
-      final FragmentTransaction fragmentTransaction = getFragmentManager().beginTransaction();
-      fragmentTransaction.setCustomAnimations(0, R.anim.exit_out_right);
-      fragmentTransaction.remove(mGestureFragment).commit();
-
-      mDarkPanel.setVisibility(View.VISIBLE);
-      ObjectAnimator anim = ObjectAnimator.ofFloat(mDarkPanel, "alpha", 0.3f, 0.0f);
-      anim.start();
-      anim.addListener(mAnimatorListener);
     }
 
     public void onClickTransitionEffectOverflowMenuButton(View v, final boolean drawer) {
@@ -1445,15 +1394,16 @@ public class Launcher extends Activity
             public boolean onMenuItemClick(MenuItem item) {
                 switch (item.getItemId()) {
                     case R.id.scrolling_page_outlines:
-                        SettingsProvider.get(Launcher.this).edit()
-                                .putBoolean(SettingsProvider.SETTINGS_UI_HOMESCREEN_SCROLLING_PAGE_OUTLINES, !item.isChecked()).commit();
+                        SettingsProvider.putBoolean(Launcher.this,
+                                SettingsProvider.SETTINGS_UI_HOMESCREEN_SCROLLING_PAGE_OUTLINES,
+                                !item.isChecked());
                         mWorkspace.setShowOutlines(!item.isChecked());
                         break;
                     case R.id.scrolling_fade_adjacent:
-                        SettingsProvider.get(Launcher.this).edit()
-                                .putBoolean(!drawer ?
+                        SettingsProvider.putBoolean(Launcher.this, !drawer ?
                                         SettingsProvider.SETTINGS_UI_HOMESCREEN_SCROLLING_FADE_ADJACENT :
-                                        SettingsProvider.SETTINGS_UI_DRAWER_SCROLLING_FADE_ADJACENT, !item.isChecked()).commit();
+                                        SettingsProvider.SETTINGS_UI_DRAWER_SCROLLING_FADE_ADJACENT,
+                                !item.isChecked());
                         pagedView.setFadeInAdjacentScreens(!item.isChecked());
                         break;
                     default:
@@ -1467,6 +1417,15 @@ public class Launcher extends Activity
         popupMenu.show();
     }
 
+    protected void startManageApps() {
+        Intent manageApps;
+        manageApps= new Intent(ACTION_MANAGE_APPS);
+        startActivity(manageApps);
+        if (mWorkspace.isInOverviewMode()) {
+            mWorkspace.exitOverviewMode(false);
+        }
+    }
+
     protected void startSettings() {
         Intent settings;
         settings = new Intent(android.provider.Settings.ACTION_SETTINGS);
@@ -1476,10 +1435,9 @@ public class Launcher extends Activity
         }
     }
 
-    protected void startManageApps() {
-        Intent manageApps;
-        manageApps= new Intent(ACTION_MANAGE_APPS);
-        startActivity(manageApps);
+    protected void startLauncherSettings() {
+        Intent settings = new Intent(this, LauncherPreferenceActivity.class);
+        startActivity(settings);
         if (mWorkspace.isInOverviewMode()) {
             mWorkspace.exitOverviewMode(false);
         }
@@ -1667,11 +1625,54 @@ public class Launcher extends Activity
             mHotseat.setOnLongClickListener(this);
         }
 
+        // Setup the overview panel
         mOverviewPanel = (ViewGroup) findViewById(R.id.overview_panel);
-        mOverviewSettingsPanel = new OverviewSettingsPanel(this, mOverviewPanel);
-        mOverviewSettingsPanel.initializeAdapter();
-        mOverviewSettingsPanel.initializeViews();
-        mDarkPanel = ((SlidingUpPanelLayout) mOverviewPanel).findViewById(R.id.dark_panel);
+        final View settingsContainer = findViewById(R.id.settings_container);
+
+        final View wallpaperButton = settingsContainer.findViewById(R.id.wallpaper_button);
+        wallpaperButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                onClickWallpaperPicker(v);
+            }
+        });
+        wallpaperButton.setOnTouchListener(getHapticFeedbackTouchListener());
+
+        final View widgetButton = settingsContainer.findViewById(R.id.widget_button);
+        widgetButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                onClickAddWidgetButton(v);
+            }
+        });
+        widgetButton.setOnTouchListener(getHapticFeedbackTouchListener());
+
+        final View manageAppsButton = settingsContainer.findViewById(R.id.manage_apps_button);
+        manageAppsButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View arg0) {
+                if (!getWorkspace().isSwitchingState()) {
+                    startManageApps();
+                }
+            }
+        });
+        manageAppsButton.setOnTouchListener(getHapticFeedbackTouchListener());
+
+        final View settingsButton = settingsContainer.findViewById(R.id.settings_button);
+        settingsButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                startLauncherSettings();
+            }
+        });
+        settingsButton.setOnLongClickListener(new OnLongClickListener() {
+            @Override
+            public boolean onLongClick(View v) {
+                startSettings();
+                return true;
+            }
+        });
+        settingsButton.setOnTouchListener(getHapticFeedbackTouchListener());
 
         // Setup the workspace
         mWorkspace.setHapticFeedbackEnabled(false);
@@ -2766,13 +2767,10 @@ public class Launcher extends Activity
                     TransitionEffectsFragment.TRANSITION_EFFECTS_FRAGMENT);
             Fragment f2 = getFragmentManager().findFragmentByTag(
                     DynamicGridSizeFragment.DYNAMIC_GRID_SIZE_FRAGMENT);
-            Fragment f3 = getFragmentManager().findFragmentByTag(GestureFragment.TAG);
             if (f != null) {
                 mTransitionEffectsFragment.setEffect();
             } else if (f2 != null) {
                 mDynamicGridSizeFragment.setSize();
-            } else if (f3 != null) {
-                mGestureFragment.setGestureDone();
             } else {
                 mWorkspace.exitOverviewMode(true);
             }
@@ -3495,10 +3493,6 @@ public class Launcher extends Activity
                 (layout instanceof CellLayout) && (layout == mHotseat.getLayout());
     }
 
-    public View getDarkPanel() {
-        return mDarkPanel;
-    }
-
     /**
      * Returns the CellLayout of the specified container at the specified screen.
      */
@@ -3516,10 +3510,6 @@ public class Launcher extends Activity
 
     public AppsCustomizePagedView getAppsCustomizeContent() {
         return mAppsCustomizeContent;
-    }
-
-    public void updateOverviewPanel() {
-        mOverviewSettingsPanel.update();
     }
 
     public boolean isAllAppsVisible() {
@@ -5285,12 +5275,12 @@ public class Launcher extends Activity
     }
 
     public void unlockScreenOrientation(boolean immediate) {
-        unlockScreenOrientation(immediate, mRestoreScreenOrientationDelay);
+        unlockScreenOrientation(0);
     }
 
-    public void unlockScreenOrientation(final boolean immediate, final int delay) {
+    public void unlockScreenOrientation(final int delay) {
         mHandler.removeCallbacks(mSetScreenOrientationRunnable);
-        if (immediate) {
+        if (delay == 0) {
             setRequestedOrientation(mOrientation);
         } else {
             mHandler.postDelayed(mSetScreenOrientationRunnable, delay);
