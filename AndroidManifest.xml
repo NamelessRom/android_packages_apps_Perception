@@ -109,6 +109,11 @@
         </activity>
 
         <activity
+            android:name=".nameless.LauncherPreferenceActivity"
+            android:label="@string/nameless_application_name"
+            android:theme="@android:style/Theme.Material.Settings" />
+
+        <activity
             android:name="com.android.launcher3.ToggleWeightWatcher"
             android:label="@string/toggle_weight_watcher"
             android:enabled="@bool/debug_memory_enabled"
