@@ -49,8 +49,8 @@
     <string name="landscape_reverse">Landscape reversed</string>
 
     <string name="hide_status_bar_title">Hide status bar</string>
-    <string name="hide">Hide</string>
-    <string name="show">Show</string>
+    <string name="hide_icon_labels">Hide icon labels</string>
+    <string name="show_search_bar">Show search bar</string>
 
     <string name="no_last_app">No last app found!</string>
 </resources>
