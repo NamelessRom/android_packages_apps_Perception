@@ -2032,17 +2032,13 @@ public class AppsCustomizePagedView extends PagedViewWithDraggableItems implemen
             }
 
             final String[] preApps = prePackageContext.getResources().getStringArray(resId);
-            int size = preApps.length;
 
             if(isPreInstallClass){
                 mPreInstallConfig = true;
             }
 
             arrayList.clear();
-
-            for (int i=0; i<size; i++) {
-                arrayList.add(preApps[i]);
-            }
+            Collections.addAll(arrayList, preApps);
         }
     }
 
