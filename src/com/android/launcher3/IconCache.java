@@ -87,6 +87,9 @@ public class IconCache {
 
         @Override
         public boolean equals(Object o) {
+            if (!(o instanceof CacheKey)) {
+                return false;
+            }
             CacheKey other = (CacheKey) o;
             return other.componentName.equals(componentName) && other.user.equals(user);
         }
