@@ -5493,16 +5493,10 @@ public class Launcher extends Activity
     }
 
     private void showFirstRunClings() {
-        // The two first run cling paths are mutually exclusive, if the launcher is preinstalled
-        // on the device, then we always show the first run cling experience (or if there is no
-        // launcher2). Otherwise, we prompt the user upon started for migration
+        // always show the first run cling experience
         LauncherClings launcherClings = new LauncherClings(this);
         if (launcherClings.shouldShowFirstRunOrMigrationClings()) {
-            if (mModel.canMigrateFromOldLauncherDb(this)) {
-                launcherClings.showMigrationCling();
-            } else {
-                launcherClings.showLongPressCling(true);
-            }
+            launcherClings.showLongPressCling(true);
         }
     }
 
