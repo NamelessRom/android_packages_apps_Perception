@@ -236,8 +236,6 @@ public class Launcher extends Activity
     public static final String SHOW_WEIGHT_WATCHER = "debug.show_mem";
     public static final boolean SHOW_WEIGHT_WATCHER_DEFAULT = false;
 
-    public static final String USER_HAS_MIGRATED = "launcher.user_migrated_from_old_data";
-
     /** The different states that Launcher can be in. */
     private enum State { NONE, WORKSPACE, APPS_CUSTOMIZE, APPS_CUSTOMIZE_SPRING_LOADED };
     private State mState = State.WORKSPACE;
@@ -257,9 +255,9 @@ public class Launcher extends Activity
     private static final AtomicInteger sNextGeneratedId = new AtomicInteger(1);
 
     // How long to wait before the new-shortcut animation automatically pans the workspace
-    private static int NEW_APPS_PAGE_MOVE_DELAY = 500;
-    private static int NEW_APPS_ANIMATION_INACTIVE_TIMEOUT_SECONDS = 5;
-    private static int NEW_APPS_ANIMATION_DELAY = 500;
+    private static final int NEW_APPS_PAGE_MOVE_DELAY = 500;
+    private static final int NEW_APPS_ANIMATION_INACTIVE_TIMEOUT_SECONDS = 5;
+    private static final int NEW_APPS_ANIMATION_DELAY = 500;
     private static final int SINGLE_FRAME_DELAY = 16;
 
     private final BroadcastReceiver mCloseSystemDialogsReceiver
@@ -276,7 +274,6 @@ public class Launcher extends Activity
     private View mWeightWatcher;
     private TransitionEffectsFragment mTransitionEffectsFragment;
     private DynamicGridSizeFragment mDynamicGridSizeFragment;
-    private LauncherClings mLauncherClings;
     protected HiddenFolderFragment mHiddenFolderFragment;
     private GestureFragment mGestureFragment;
 
@@ -1954,11 +1951,6 @@ public class Launcher extends Activity
                 mModel.resetLoadedState(false, true);
                 mModel.startLoader(false, PagedView.INVALID_RESTORE_PAGE,
                         LauncherModel.LOADER_FLAG_CLEAR_WORKSPACE);
-            } else if (ENABLE_DEBUG_INTENTS && DebugIntents.MIGRATE_DATABASE.equals(action)) {
-                mModel.resetLoadedState(false, true);
-                mModel.startLoader(false, PagedView.INVALID_RESTORE_PAGE,
-                        LauncherModel.LOADER_FLAG_CLEAR_WORKSPACE
-                                | LauncherModel.LOADER_FLAG_MIGRATE_SHORTCUTS);
             } else if (LauncherAppsCompat.ACTION_MANAGED_PROFILE_ADDED.equals(action)
                     || LauncherAppsCompat.ACTION_MANAGED_PROFILE_REMOVED.equals(action)) {
                 getModel().forceReload();
@@ -1979,7 +1971,6 @@ public class Launcher extends Activity
         filter.addAction(LauncherAppsCompat.ACTION_MANAGED_PROFILE_REMOVED);
         if (ENABLE_DEBUG_INTENTS) {
             filter.addAction(DebugIntents.DELETE_DATABASE);
-            filter.addAction(DebugIntents.MIGRATE_DATABASE);
         }
         registerReceiver(mReceiver, filter);
         FirstFrameAnimatorHelper.initializeDrawListener(getWindow().getDecorView());
@@ -5493,16 +5484,10 @@ public class Launcher extends Activity
     }
 
     private void showFirstRunClings() {
-        // The two first run cling paths are mutually exclusive, if the launcher is preinstalled
-        // on the device, then we always show the first run cling experience (or if there is no
-        // launcher2). Otherwise, we prompt the user upon started for migration
+        // always show the first run cling experience
         LauncherClings launcherClings = new LauncherClings(this);
         if (launcherClings.shouldShowFirstRunOrMigrationClings()) {
-            if (mModel.canMigrateFromOldLauncherDb(this)) {
-                launcherClings.showMigrationCling();
-            } else {
-                launcherClings.showLongPressCling(true);
-            }
+            launcherClings.showLongPressCling(true);
         }
     }
 
@@ -5748,5 +5733,4 @@ interface LauncherTransitionable {
 
 interface DebugIntents {
     static final String DELETE_DATABASE  = "com.android.launcher3.action.DELETE_DATABASE";
-    static final String MIGRATE_DATABASE = "com.android.launcher3.action.MIGRATE_DATABASE";
 }
