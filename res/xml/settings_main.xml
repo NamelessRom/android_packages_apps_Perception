@@ -79,6 +79,11 @@
             android:title="@string/scroll_effect_text"
             android:summary="@string/scroll_effect_drawer_summary" />
 
+        <SwitchPreference
+            android:key="drawer_background_dark"
+            android:title="@string/dark_background"
+            android:defaultValue="false" />
+
     </PreferenceCategory>
 
     <PreferenceCategory

@@ -78,7 +78,7 @@ class AsyncTaskPageData {
             AsyncTaskCallback postR, WidgetPreviewLoader w) {
         page = p;
         items = l;
-        generatedImages = new ArrayList<Bitmap>();
+        generatedImages = new ArrayList<>();
         maxImageWidth = cw;
         maxImageHeight = ch;
         doInBackgroundCallback = bgR;
@@ -98,7 +98,6 @@ class AsyncTaskPageData {
     }
     int page;
     ArrayList<Object> items;
-    ArrayList<Bitmap> sourceImages;
     ArrayList<Bitmap> generatedImages;
     int maxImageWidth;
     int maxImageHeight;
@@ -227,24 +226,13 @@ public class AppsCustomizePagedView extends PagedViewWithDraggableItems implemen
     private Rect mAllAppsPadding = new Rect();
 
     // Animation states
-    enum State { NORMAL, OVERVIEW};
-    private State mState = State.NORMAL;
     private boolean mIsSwitchingState = false;
-
-    // Animation values
-    private float mNewScale;
-    private float[] mOldBackgroundAlphas;
-    private float[] mOldAlphas;
-    private float[] mNewBackgroundAlphas;
-    private float[] mNewAlphas;
 
     // Relating to the scroll and overscroll effects
     private static float TRANSITION_MAX_ROTATION = 22;
     private static final float ALPHA_CUTOFF_THRESHOLD = 0.01f;
     private boolean mOverscrollTransformsSet;
     private float mLastOverscrollPivotX;
-
-    public static boolean DISABLE_ALL_APPS = false;
 
     // Previews & outlines
     ArrayList<AppsCustomizeAsyncTask> mRunningTasks;
@@ -260,16 +248,15 @@ public class AppsCustomizePagedView extends PagedViewWithDraggableItems implemen
     int mWidgetLoadingId = -1;
     PendingAddWidgetInfo mCreateWidgetInfo = null;
     private boolean mDraggingWidget = false;
+    private boolean mDarkBackground = false;
     boolean mPageBackgroundsVisible = true;
 
     private Toast mWidgetInstructionToast;
 
     // Deferral of loading widget previews during launcher transitions
     private boolean mInTransition;
-    private ArrayList<AsyncTaskPageData> mDeferredSyncWidgetPageItems =
-        new ArrayList<AsyncTaskPageData>();
-    private ArrayList<Runnable> mDeferredPrepareLoadWidgetPreviewsTasks =
-        new ArrayList<Runnable>();
+    private ArrayList<AsyncTaskPageData> mDeferredSyncWidgetPageItems = new ArrayList<>();
+    private ArrayList<Runnable> mDeferredPrepareLoadWidgetPreviewsTasks = new ArrayList<>();
 
     WidgetPreviewLoader mWidgetPreviewLoader;
 
@@ -280,12 +267,12 @@ public class AppsCustomizePagedView extends PagedViewWithDraggableItems implemen
         super(context, attrs);
         mLayoutInflater = LayoutInflater.from(context);
         mPackageManager = context.getPackageManager();
-        mApps = new ArrayList<AppInfo>();
-        mFilteredApps = new ArrayList<AppInfo>();
-        mWidgets = new ArrayList<Object>();
-        mFilteredWidgets = new ArrayList<Object>();
+        mApps = new ArrayList<>();
+        mFilteredApps = new ArrayList<>();
+        mWidgets = new ArrayList<>();
+        mFilteredWidgets = new ArrayList<>();
+        mRunningTasks = new ArrayList<>();
         mIconCache = (LauncherAppState.getInstance()).getIconCache();
-        mRunningTasks = new ArrayList<AppsCustomizeAsyncTask>();
 
         // Save the default widget preview background
         TypedArray a = context.obtainStyledAttributes(attrs, R.styleable.AppsCustomizePagedView, 0, 0);
@@ -942,7 +929,7 @@ public class AppsCustomizePagedView extends PagedViewWithDraggableItems implemen
         // Clean up all the async tasks
         Iterator<AppsCustomizeAsyncTask> iter = mRunningTasks.iterator();
         while (iter.hasNext()) {
-            AppsCustomizeAsyncTask task = (AppsCustomizeAsyncTask) iter.next();
+            AppsCustomizeAsyncTask task = iter.next();
             task.cancel(false);
             iter.remove();
             mDirtyPageContent.set(task.page, true);
@@ -976,7 +963,7 @@ public class AppsCustomizePagedView extends PagedViewWithDraggableItems implemen
         // Update the thread priorities given the direction lookahead
         Iterator<AppsCustomizeAsyncTask> iter = mRunningTasks.iterator();
         while (iter.hasNext()) {
-            AppsCustomizeAsyncTask task = (AppsCustomizeAsyncTask) iter.next();
+            AppsCustomizeAsyncTask task = iter.next();
             int pageIndex = task.page;
             if ((mNextPage > mCurrentPage && pageIndex >= mCurrentPage) ||
                 (mNextPage < mCurrentPage && pageIndex <= mCurrentPage)) {
@@ -996,6 +983,15 @@ public class AppsCustomizePagedView extends PagedViewWithDraggableItems implemen
             layout.getChildAt(i).setVisibility(visibility);
         }
     }
+
+    public void setDarkBackground(boolean isDarkBackground) {
+        mDarkBackground = isDarkBackground;
+    }
+
+    public boolean isDarkBackground() {
+        return mDarkBackground;
+    }
+
     private void setupPage(AppsCustomizeCellLayout layout) {
         layout.setGridSize(mCellCountX, mCellCountY);
 
@@ -1008,9 +1004,11 @@ public class AppsCustomizePagedView extends PagedViewWithDraggableItems implemen
         int heightSpec = MeasureSpec.makeMeasureSpec(mContentHeight, MeasureSpec.AT_MOST);
         layout.measure(widthSpec, heightSpec);
 
-        Drawable bg = getContext().getResources().getDrawable(R.drawable.quantum_panel);
+        final int bgResId =
+                mDarkBackground ? R.drawable.quantum_panel_dark : R.drawable.quantum_panel;
+        Drawable bg = getContext().getResources().getDrawable(bgResId);
         if (bg != null) {
-            bg.setAlpha(mPageBackgroundsVisible ? 255: 0);
+            bg.setAlpha(mPageBackgroundsVisible ? 255 : 0);
             layout.setBackground(bg);
         }
 
@@ -1046,6 +1044,11 @@ public class AppsCustomizePagedView extends PagedViewWithDraggableItems implemen
                     R.layout.apps_customize_application, layout, false);
             icon.applyFromApplicationInfo(info);
             icon.setTextVisibility(!hideIconLabels);
+            if (!hideIconLabels) {
+                final int backgroundColorResId = mDarkBackground
+                        ? R.color.dark_panel_text_color : R.color.quantum_panel_text_color;
+                icon.setTextColor(getResources().getColor(backgroundColorResId));
+            }
             icon.setOnClickListener(mLauncher);
             icon.setOnLongClickListener(this);
             icon.setOnTouchListener(this);
