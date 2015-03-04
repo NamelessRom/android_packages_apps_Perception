@@ -17,6 +17,11 @@
             android:title="@string/hide_status_bar_title"
             android:defaultValue="false" />
 
+        <SwitchPreference
+            android:key="global_dark_theme"
+            android:title="@string/dark_theme"
+            android:defaultValue="false" />
+
     </PreferenceCategory>
 
     <PreferenceCategory

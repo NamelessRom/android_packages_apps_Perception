@@ -72,6 +72,7 @@ public class LauncherPreferenceFragment extends PreferenceFragment implements Pr
 
     // Drawer
     private ListPreference mSortMode;
+    private SwitchPreference mDarkTheme;
 
     public LauncherPreferenceFragment() { }
 
@@ -177,6 +178,11 @@ public class LauncherPreferenceFragment extends PreferenceFragment implements Pr
         mSortMode = (ListPreference) findPreference(SettingsProvider.SETTINGS_UI_DRAWER_SORT_MODE);
         mSortMode.setSummary(mSortMode.getEntry());
         mSortMode.setOnPreferenceChangeListener(this);
+
+        mDarkTheme = (SwitchPreference) findPreference(
+                SettingsProvider.SETTINGS_UI_GLOBAL_DARK_THEME);
+        mDarkTheme.setChecked(mLauncher.getAppsCustomizeContent().isDarkTheme());
+        mDarkTheme.setOnPreferenceChangeListener(this);
     }
 
     @Override
@@ -195,7 +201,7 @@ public class LauncherPreferenceFragment extends PreferenceFragment implements Pr
             mLauncher.onClickGestureButton();
         } else if (KEY_GRID_SIZE.equals(key)) {
             mLauncher.onClickDynamicGridSizeButton();
-        }  else if (KEY_SCROLL_EFFECT_DRAWER.equals(key)) {
+        } else if (KEY_SCROLL_EFFECT_DRAWER.equals(key)) {
             mLauncher.onClickTransitionEffectButton(true);
         } else if (KEY_SCROLL_EFFECT_HOME.equals(key)) {
             mLauncher.onClickTransitionEffectButton(false);
@@ -225,7 +231,13 @@ public class LauncherPreferenceFragment extends PreferenceFragment implements Pr
             SettingsProvider.putBoolean(getActivity(), mStatusBarVisibility.getKey(), value);
             mLauncher.updateStatusBarVisibility();
             return true;
+        } else if (mDarkTheme == preference) {
+            final boolean value = (Boolean) newValue;
+            mLauncher.getAppsCustomizeContent().setDarkTheme(value);
+            mLauncher.getAppsCustomizeContent().syncPages();
+            return true;
         }
+
         return false;
     }
 }

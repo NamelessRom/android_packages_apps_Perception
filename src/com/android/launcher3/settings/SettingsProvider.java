@@ -24,6 +24,7 @@ public final class SettingsProvider {
     // Global
     public static final String SETTINGS_UI_GLOBAL_ORIENTATION = "global_orientation";
     public static final String SETTINGS_UI_GLOBAL_HIDE_STATUS_BAR = "global_hide_status_bar";
+    public static final String SETTINGS_UI_GLOBAL_DARK_THEME = "global_dark_theme";
 
     // Drawer
     public static final String SETTINGS_UI_DRAWER_SORT_MODE = "drawer_sort_mode";

@@ -48,7 +48,7 @@
             android:paddingTop="@dimen/folder_name_padding"
             android:adjustViewBounds="true"
             android:layout_alignParentRight="true"
-            android:src="@drawable/folder_unlock" />
+            android:src="@drawable/user_folder_unlock" />
 
         <com.android.launcher3.FolderEditText
             android:id="@+id/folder_name"
@@ -63,8 +63,8 @@
             android:paddingBottom="@dimen/folder_name_padding"
             android:paddingTop="@dimen/folder_name_padding"
             android:singleLine="true"
-            android:textColor="#ff777777"
-            android:textColorHighlight="#ffCCCCCC"
+            android:textColor="@color/folder_text_color"
+            android:textColorHighlight="@color/folder_text_color_highlight"
             android:textCursorDrawable="@null"
             android:layout_alignParentLeft="true"
             android:layout_toLeftOf="@id/folder_lock"

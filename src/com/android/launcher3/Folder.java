@@ -148,8 +148,6 @@ public class Folder extends LinearLayout implements DragSource, View.OnClickList
     private boolean mDeferDropAfterUninstall;
     private boolean mUninstallSuccessful;
 
-    private boolean mHiddenFolder = false;
-
     /**
      * Used to inflate the Workspace from XML.
      *
@@ -538,6 +536,14 @@ public class Folder extends LinearLayout implements DragSource, View.OnClickList
 
     public void animateOpen() {
         if (!(getParent() instanceof DragLayer)) return;
+
+        final int bgResId = mLauncher.getAppsCustomizeContent().isDarkTheme()
+                ? R.drawable.quantum_panel_dark : R.drawable.quantum_panel;
+        setBackgroundResource(bgResId);
+
+        final int lockResId = mLauncher.getAppsCustomizeContent().isDarkTheme()
+                ? R.drawable.user_folder_unlock_dark : R.drawable.user_folder_unlock;
+        mFolderLock.setImageResource(lockResId);
 
         Animator openFolderAnim;
         final Runnable onCompleteRunnable;
