@@ -36,6 +36,7 @@ import android.os.Build;
 import android.os.Bundle;
 import android.os.Process;
 import android.provider.Settings;
+import android.text.TextUtils;
 import android.util.AttributeSet;
 import android.util.Log;
 import android.view.Gravity;
@@ -212,11 +213,6 @@ public class AppsCustomizePagedView extends PagedViewWithDraggableItems implemen
 
     private ArrayList<ComponentName> mProtectedApps;
     private ArrayList<String> mProtectedPackages;
-
-    // Cling
-    private boolean mHasShownAllAppsCling;
-    private int mClingFocusedX;
-    private int mClingFocusedY;
 
     // Caching
     private IconCache mIconCache;
@@ -506,23 +502,25 @@ public class AppsCustomizePagedView extends PagedViewWithDraggableItems implemen
         if (!isDataReady()) {
             if ((LauncherAppState.isDisableAllApps() || !mFilteredApps.isEmpty())
                     && !mFilteredWidgets.isEmpty()) {
-                post(new Runnable() {
-                    // This code triggers requestLayout so must be posted outside of the
-                    // layout pass.
-                    public void run() {
-                        boolean attached = true;
-                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
-                            attached = isAttachedToWindow();
-                        }
-                        if (attached) {
-                            setDataIsReady();
-                            onDataReady(getMeasuredWidth(), getMeasuredHeight());
-                        }
-                    }
-                });
+                post(mLayoutRunnable);
             }
         }
     }
+
+    private final Runnable mLayoutRunnable = new Runnable() {
+        // This code triggers requestLayout so must be posted outside of the
+        // layout pass.
+        public void run() {
+            boolean attached = true;
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
+                attached = isAttachedToWindow();
+            }
+            if (attached) {
+                setDataIsReady();
+                onDataReady(getMeasuredWidth(), getMeasuredHeight());
+            }
+        }
+    };
 
     public void onPackagesUpdated(ArrayList<Object> widgetsAndShortcuts) {
         LauncherAppState app = LauncherAppState.getInstance();
@@ -572,7 +570,7 @@ public class AppsCustomizePagedView extends PagedViewWithDraggableItems implemen
         }
     }
 
-    private void updatePageCountsAndInvalidateData() {
+    public void updatePageCountsAndInvalidateData() {
         if (mInBulkBind) {
             mNeedToUpdatePageCountsAndInvalidateData = true;
         } else {
@@ -1260,7 +1258,7 @@ public class AppsCustomizePagedView extends PagedViewWithDraggableItems implemen
         final PagedViewGridLayout layout = (PagedViewGridLayout) getPageAt(page);
 
         // Calculate the dimensions of each cell we are giving to each widget
-        final ArrayList<Object> items = new ArrayList<Object>();
+        final ArrayList<Object> items = new ArrayList<>();
         int contentWidth = mContentWidth - layout.getPaddingLeft() - layout.getPaddingRight();
         final int cellWidth = contentWidth / mWidgetCountX;
         int contentHeight = mContentHeight - layout.getPaddingTop() - layout.getPaddingBottom();
@@ -1278,7 +1276,7 @@ public class AppsCustomizePagedView extends PagedViewWithDraggableItems implemen
         layout.setColumnCount(layout.getCellCountX());
         for (int i = 0; i < items.size(); ++i) {
             Object rawInfo = items.get(i);
-            PendingAddItemInfo createItemInfo = null;
+            PendingAddItemInfo createItemInfo;
             PagedViewWidget widget = (PagedViewWidget) mLayoutInflater.inflate(
                     R.layout.apps_customize_widget, layout, false);
             if (rawInfo instanceof AppWidgetProviderInfo) {
@@ -1822,13 +1820,44 @@ public class AppsCustomizePagedView extends PagedViewWithDraggableItems implemen
         }
     }
 
+    public void filter(String searchString) {
+        if (mContentType == ContentType.Applications) {
+            if (TextUtils.isEmpty(searchString)) {
+                filterApps();
+            } else {
+                filterAppsWithoutInvalidate(searchString);
+                updatePageCountsAndInvalidateData();
+            }
+        } else {
+            if (TextUtils.isEmpty(searchString)) {
+                filterWidgets();
+            } else {
+                filterWidgetsWithoutInvalidate(searchString);
+                updatePageCountsAndInvalidateData();
+            }
+        }
+    }
+
     public void filterAppsWithoutInvalidate() {
+        filterAppsWithoutInvalidate(null);
+    }
+
+    public void filterAppsWithoutInvalidate(String filter) {
         updateProtectedAppsList(mLauncher);
 
-        mFilteredApps = new ArrayList<AppInfo>(mApps);
+        filter = (filter != null ? filter.trim().toLowerCase() : null);
+        boolean filterByName = !TextUtils.isEmpty(filter);
+
+        mFilteredApps = new ArrayList<>(mApps);
         Iterator<AppInfo> iterator = mFilteredApps.iterator();
         while (iterator.hasNext()) {
             AppInfo appInfo = iterator.next();
+
+            if (filterByName && !appInfo.title.toString().toLowerCase().contains(filter)) {
+                iterator.remove();
+                continue;
+            }
+
             boolean system = (appInfo.flags & AppInfo.DOWNLOADED_FLAG) == 0;
             if (mProtectedApps.contains(appInfo.componentName) ||
                     (system && !getShowSystemApps()) ||
@@ -1845,24 +1874,34 @@ public class AppsCustomizePagedView extends PagedViewWithDraggableItems implemen
     }
 
     public void filterWidgetsWithoutInvalidate() {
+        filterWidgetsWithoutInvalidate(null);
+    }
+
+    public void filterWidgetsWithoutInvalidate(String filter) {
         updateProtectedAppsList(mLauncher);
 
-        mFilteredWidgets = new ArrayList<Object>(mWidgets);
+        filter = (filter != null ? filter.trim().toLowerCase() : null);
+        boolean filterByName = !TextUtils.isEmpty(filter);
+
+        mFilteredWidgets = new ArrayList<>(mWidgets);
 
         Iterator<Object> iterator = mFilteredWidgets.iterator();
         while (iterator.hasNext()) {
             Object o = iterator.next();
 
             String packageName;
+            String title;
             if (o instanceof AppWidgetProviderInfo) {
                 AppWidgetProviderInfo widgetInfo = (AppWidgetProviderInfo) o;
                 if (widgetInfo.provider == null) {
                     continue;
                 }
                 packageName = widgetInfo.provider.getPackageName();
+                title = widgetInfo.loadLabel(mPackageManager);
             } else if (o instanceof ResolveInfo) {
                 ResolveInfo shortcut = (ResolveInfo) o;
                 packageName = shortcut.activityInfo.applicationInfo.packageName;
+                title = shortcut.loadLabel(mPackageManager).toString();
             } else {
                 Log.w(TAG, "Unknown class in widgets list: " + o.getClass());
                 continue;
@@ -1873,6 +1912,11 @@ public class AppsCustomizePagedView extends PagedViewWithDraggableItems implemen
                 flags = AppInfo.initFlags(mPackageManager.getPackageInfo(packageName, 0));
             } catch (PackageManager.NameNotFoundException e) {
                 flags = 0;
+            }
+
+            if (filterByName && !title.toLowerCase().contains(filter)) {
+                iterator.remove();
+                continue;
             }
 
             boolean system = (flags & AppInfo.DOWNLOADED_FLAG) == 0;
