@@ -62,5 +62,7 @@
     <string name="grid_size_summary">Configure the grid size of your home screen</string>
     <string name="protected_app_summary">Configure protected apps</string>
 
+    <string name="transparent_background">Transparent background</string>
+
     <string name="no_last_app">No last app found!</string>
 </resources>
