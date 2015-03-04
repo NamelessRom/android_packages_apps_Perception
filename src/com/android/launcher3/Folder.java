@@ -122,7 +122,7 @@ public class Folder extends LinearLayout implements DragSource, View.OnClickList
     private boolean mItemAddedBackToSelfViaIcon = false;
     FolderEditText mFolderName;
     ImageView mFolderLock;
-    RelativeLayout mFolderTitleSection;
+    LinearLayout mFolderTitleSection;
     private float mFolderIconPivotX;
     private float mFolderIconPivotY;
     private boolean mHideLabels;
@@ -147,8 +147,6 @@ public class Folder extends LinearLayout implements DragSource, View.OnClickList
     private Runnable mDeferredAction;
     private boolean mDeferDropAfterUninstall;
     private boolean mUninstallSuccessful;
-
-    private boolean mHiddenFolder = false;
 
     /**
      * Used to inflate the Workspace from XML.
@@ -239,7 +237,7 @@ public class Folder extends LinearLayout implements DragSource, View.OnClickList
         }
 
         mFolderLock = (ImageView) findViewById(R.id.folder_lock);
-        mFolderTitleSection = (RelativeLayout) findViewById(R.id.folder_title_section);
+        mFolderTitleSection = (LinearLayout) findViewById(R.id.folder_title_section);
         mFolderLock.measure(measureSpec, measureSpec);
         mFolderLock.setOnClickListener(this);
         mFolderTitleSection.measure(measureSpec, measureSpec);
@@ -538,6 +536,14 @@ public class Folder extends LinearLayout implements DragSource, View.OnClickList
 
     public void animateOpen() {
         if (!(getParent() instanceof DragLayer)) return;
+
+        final int bgResId = mLauncher.getAppsCustomizeContent().isDarkTheme()
+                ? R.drawable.quantum_panel_dark : R.drawable.quantum_panel;
+        setBackgroundResource(bgResId);
+
+        final int lockResId = mLauncher.getAppsCustomizeContent().isDarkTheme()
+                ? R.drawable.user_folder_unlock_dark : R.drawable.user_folder_unlock;
+        mFolderLock.setImageResource(lockResId);
 
         Animator openFolderAnim;
         final Runnable onCompleteRunnable;
@@ -1157,8 +1163,7 @@ public class Folder extends LinearLayout implements DragSource, View.OnClickList
     protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
         int width = getPaddingLeft()
                 + getPaddingRight()
-                + Math.max(mContent.getDesiredWidth(),
-                        mFolderTitleSection.getMeasuredWidth());
+                + Math.max(mContent.getDesiredWidth(), mFolderTitleSection.getMeasuredWidth());
         int height = getFolderHeight();
         int contentAreaWidthSpec = MeasureSpec.makeMeasureSpec(getContentAreaWidth(),
                 MeasureSpec.EXACTLY);

@@ -5,6 +5,11 @@
         android:key="category_global"
         android:title="@string/global_settings">
 
+        <SwitchPreference
+            android:key="global_dark_theme"
+            android:title="@string/dark_theme"
+            android:defaultValue="false" />
+
         <ListPreference
             android:key="global_orientation"
             android:title="@string/screen_orientation"
