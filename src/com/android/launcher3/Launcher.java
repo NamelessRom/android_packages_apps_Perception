@@ -514,6 +514,9 @@ public class Launcher extends Activity
         // set orientation depending on user configuration
         unlockScreenOrientation(true);
 
+        // drawer background
+        updateDrawerBackground();
+
         if (shouldShowIntroScreen()) {
             showIntroScreen();
         } else {
@@ -612,6 +615,13 @@ public class Launcher extends Activity
         if (mSearchDropTargetBar != null) {
             mSearchDropTargetBar.onSearchPackagesChanged(searchVisible, voiceVisible);
         }
+    }
+
+    private void updateDrawerBackground() {
+        final boolean darkBackground = SettingsProvider.getBooleanCustomDefault(this,
+                SettingsProvider.SETTINGS_UI_DRAWER_BACKGROUND_DARK, false);
+
+        mAppsCustomizeContent.setDarkBackground(darkBackground);
     }
 
     private void checkForLocaleChange() {
@@ -3528,8 +3538,7 @@ public class Launcher extends Activity
     }
 
     private void setWorkspaceBackground(boolean workspace) {
-        mLauncherView.setBackground(workspace ?
-                mWorkspaceBackgroundDrawable : null);
+        mLauncherView.setBackground(workspace ? mWorkspaceBackgroundDrawable : null);
     }
 
     protected void changeWallpaperVisiblity(boolean visible) {
@@ -3663,7 +3672,8 @@ public class Launcher extends Activity
             final View page = content.getPageAt(content.getCurrentPage());
             final View revealView = toView.findViewById(R.id.fake_page);
 
-            final boolean isWidgetTray = contentType == AppsCustomizePagedView.ContentType.Widgets;
+            final boolean isWidgetTray = contentType == AppsCustomizePagedView.ContentType.Widgets
+                    || getAppsCustomizeContent().isDarkBackground();
             if (isWidgetTray) {
                 revealView.setBackground(res.getDrawable(R.drawable.quantum_panel_dark));
             } else {
@@ -3901,7 +3911,8 @@ public class Launcher extends Activity
             if (fromView.getVisibility() == View.VISIBLE) {
                 AppsCustomizePagedView.ContentType contentType = content.getContentType();
                 final boolean isWidgetTray =
-                        contentType == AppsCustomizePagedView.ContentType.Widgets;
+                        contentType == AppsCustomizePagedView.ContentType.Widgets
+                                || getAppsCustomizeContent().isDarkBackground();
 
                 if (isWidgetTray) {
                     revealView.setBackground(res.getDrawable(R.drawable.quantum_panel_dark));
