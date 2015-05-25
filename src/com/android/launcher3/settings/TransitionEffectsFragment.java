@@ -1,29 +1,30 @@
-package com.android.launcher3;
+package com.android.launcher3.settings;
 
-import android.animation.Animator;
-import android.animation.ObjectAnimator;
-import android.app.Fragment;
 import android.content.Context;
 import android.content.res.Configuration;
 import android.content.res.TypedArray;
 import android.graphics.Color;
 import android.graphics.drawable.AnimationDrawable;
 import android.os.Bundle;
-import android.util.DisplayMetrics;
 import android.view.Gravity;
 import android.view.LayoutInflater;
+import android.view.Menu;
+import android.view.MenuInflater;
+import android.view.MenuItem;
 import android.view.View;
 import android.view.View.OnClickListener;
 import android.view.ViewGroup;
 import android.widget.ArrayAdapter;
-import android.widget.FrameLayout;
 import android.widget.ImageView;
-import android.widget.LinearLayout;
 import android.widget.ListView;
 import android.widget.TextView;
-import com.android.launcher3.settings.SettingsProvider;
 
-public class TransitionEffectsFragment extends Fragment {
+import com.android.launcher3.R;
+import com.android.launcher3.nameless.LauncherConfiguration;
+import com.android.launcher3.nameless.SlidingFragment;
+
+public class TransitionEffectsFragment extends SlidingFragment
+        implements MenuItem.OnMenuItemClickListener {
     public static final String PAGE_OR_DRAWER_SCROLL_SELECT = "pageOrDrawer";
     public static final String SELECTED_TRANSITION_EFFECT = "selectedTransitionEffect";
     public static final String TRANSITION_EFFECTS_FRAGMENT = "transitionEffectsFragment";
@@ -43,68 +44,57 @@ public class TransitionEffectsFragment extends Fragment {
 
         @Override
         public void onClick(View v) {
-            if (mCurrentPosition == (Integer) v.getTag()) {
+            ViewHolder viewHolder = (ViewHolder) v.getTag();
+            if (viewHolder == null) {
                 return;
             }
-            mCurrentPosition = (Integer) v.getTag();
+            if (mCurrentPosition == viewHolder.position) {
+                return;
+            }
+            mCurrentPosition = viewHolder.position;
             mCurrentState = mTransitionStates[mCurrentPosition];
 
             setCleared(mCurrentSelection);
             setSelected(v);
             mCurrentSelection = v;
 
-            new Thread(new Runnable() {
-                public void run() {
-                    mTransitionIcon.post(new Runnable() {
-                        public void run() {
-                            setImageViewToEffect();
-                        }
-                    });
-                }
-            }).start();
+            new Thread(mImageEffectThreadRunnable).start();
 
             ((TransitionsArrayAdapter) mListView.getAdapter()).notifyDataSetChanged();
         }
     };
 
+    private final Runnable mImageEffectThreadRunnable = new Runnable() {
+        public void run() {
+            mTransitionIcon.post(mImageEffectRunnable);
+        }
+    };
+
+    private final Runnable mImageEffectRunnable = new Runnable() {
+        public void run() {
+            setImageViewToEffect();
+        }
+    };
+
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
-                             Bundle savedInstanceState) {
+            Bundle savedInstanceState) {
+        setHasOptionsMenu(true);
+
         View v = inflater.inflate(R.layout.settings_transitions_screen, container, false);
         mListView = (ListView) v.findViewById(R.id.settings_transitions_list);
-
-        final Launcher launcher = (Launcher) getActivity();
-        LinearLayout.LayoutParams lp = (LinearLayout.LayoutParams)
-                mListView.getLayoutParams();
-        lp.bottomMargin = ((FrameLayout.LayoutParams) launcher.getOverviewPanel()
-                .findViewById(R.id.settings_container).getLayoutParams()).bottomMargin;
-        mListView.setLayoutParams(lp);
 
         mIsDrawer = getArguments().getBoolean(PAGE_OR_DRAWER_SCROLL_SELECT);
 
         mSettingsProviderValue = mIsDrawer ?
                 SettingsProvider.SETTINGS_UI_DRAWER_SCROLLING_TRANSITION_EFFECT
                 : SettingsProvider.SETTINGS_UI_HOMESCREEN_SCROLLING_TRANSITION_EFFECT;
-        mPreferenceValue = mIsDrawer ? R.string.preferences_interface_drawer_scrolling_transition_effect
-                : R.string.preferences_interface_homescreen_scrolling_transition_effect;
+        mPreferenceValue =
+                mIsDrawer ? R.string.preferences_interface_drawer_scrolling_transition_effect
+                        : R.string.preferences_interface_homescreen_scrolling_transition_effect;
 
         mTransitionIcon = (ImageView) v.findViewById(R.id.settings_transition_image);
-        TextView title = (TextView) v.findViewById(R.id.transition_effect_title);
-        title.setText(getResources().getString(R.string.scroll_effect_text));
-        LinearLayout titleLayout = (LinearLayout) v.findViewById(R.id.transition_title);
-        titleLayout.setOnClickListener(new OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                setEffect();
-            }
-        });
-        View options = v.findViewById(R.id.transition_options_menu);
-        options.setOnClickListener(new OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                launcher.onClickTransitionEffectOverflowMenuButton(view, mIsDrawer);
-            }
-        });
+        mTransitionIcon.post(mImageEffectRunnable);
 
         String[] titles = getResources().getStringArray(
                 R.array.transition_effect_entries);
@@ -122,17 +112,73 @@ public class TransitionEffectsFragment extends Fragment {
 
         mListView.setSelection(mCurrentPosition);
 
-        // RTL
-        ImageView navPrev = (ImageView) v.findViewById(R.id.nav_prev);
-        Configuration config = getResources().getConfiguration();
-        if (config.getLayoutDirection() == View.LAYOUT_DIRECTION_RTL) {
-            navPrev.setImageResource(R.drawable.ic_navigation_next);
-        }
         return v;
     }
 
+    @Override public void onCreateOptionsMenu(Menu menu, MenuInflater inflater) {
+        super.onCreateOptionsMenu(menu, inflater);
+
+        inflater.inflate(R.menu.scrolling_settings, menu);
+        MenuItem pageOutlines = menu.findItem(R.id.scrolling_page_outlines);
+        MenuItem fadeAdjacent = menu.findItem(R.id.scrolling_fade_adjacent);
+
+        pageOutlines.setVisible(!mIsDrawer);
+        pageOutlines.setChecked(SettingsProvider.getBoolean(getActivity(),
+                SettingsProvider.SETTINGS_UI_HOMESCREEN_SCROLLING_PAGE_OUTLINES,
+                R.bool.preferences_interface_homescreen_scrolling_page_outlines_default
+        ));
+        pageOutlines.setOnMenuItemClickListener(this);
+
+        fadeAdjacent.setChecked(SettingsProvider.getBoolean(getActivity(),
+                !mIsDrawer ?
+                        SettingsProvider.SETTINGS_UI_HOMESCREEN_SCROLLING_FADE_ADJACENT :
+                        SettingsProvider.SETTINGS_UI_DRAWER_SCROLLING_FADE_ADJACENT,
+                !mIsDrawer ?
+                        R.bool.preferences_interface_homescreen_scrolling_fade_adjacent_default :
+                        R.bool.preferences_interface_drawer_scrolling_fade_adjacent_default
+        ));
+        fadeAdjacent.setOnMenuItemClickListener(this);
+    }
+
+
+    @Override public boolean onMenuItemClick(MenuItem item) {
+        final int id = item.getItemId();
+        switch (id) {
+            case R.id.scrolling_page_outlines:
+                SettingsProvider.putBoolean(getActivity(),
+                        SettingsProvider.SETTINGS_UI_HOMESCREEN_SCROLLING_PAGE_OUTLINES,
+                        !item.isChecked());
+                LauncherConfiguration.updateWorkspace = true;
+                break;
+            case R.id.scrolling_fade_adjacent:
+                SettingsProvider.putBoolean(getActivity(), !mIsDrawer ?
+                                SettingsProvider.SETTINGS_UI_HOMESCREEN_SCROLLING_FADE_ADJACENT :
+                                SettingsProvider.SETTINGS_UI_DRAWER_SCROLLING_FADE_ADJACENT,
+                        !item.isChecked());
+                if (!mIsDrawer) {
+                    LauncherConfiguration.updateWorkspace = true;
+                } else {
+                    LauncherConfiguration.updateAppsFadeInAdjacentScreens = true;
+                }
+                break;
+            default:
+                return false;
+        }
+
+        return false;
+    }
+
     public void setEffect() {
-        ((Launcher) getActivity()).setTransitionEffect(mIsDrawer, mCurrentState);
+        String mSettingsProviderValue = mIsDrawer ?
+                SettingsProvider.SETTINGS_UI_DRAWER_SCROLLING_TRANSITION_EFFECT :
+                SettingsProvider.SETTINGS_UI_HOMESCREEN_SCROLLING_TRANSITION_EFFECT;
+        SettingsProvider.putString(getActivity(), mSettingsProviderValue, mCurrentState);
+
+        if (mIsDrawer) {
+            LauncherConfiguration.updateAppsTransition = true;
+        } else {
+            LauncherConfiguration.updateWorkspace = true;
+        }
     }
 
     private int mapEffectToPosition(String effect) {
@@ -177,23 +223,13 @@ public class TransitionEffectsFragment extends Fragment {
         t.setTextColor(Color.WHITE);
     }
 
-    @Override
-    public Animator onCreateAnimator(int transit, boolean enter, int nextAnim) {
-        if (enter) {
-            DisplayMetrics displaymetrics = new DisplayMetrics();
-            getActivity().getWindowManager().getDefaultDisplay().getMetrics(displaymetrics);
-            int width = displaymetrics.widthPixels;
-            Configuration config = getResources().getConfiguration();
-            final ObjectAnimator anim;
-            if (config.getLayoutDirection() == View.LAYOUT_DIRECTION_RTL) {
-                anim = ObjectAnimator.ofFloat(this, "translationX", -width, 0);
-            } else {
-                anim = ObjectAnimator.ofFloat(this, "translationX", width, 0);
-            }
+    public static class ViewHolder {
+        TextView textView;
+        int position;
 
-            return anim;
-        } else {
-            return super.onCreateAnimator(transit, enter, nextAnim);
+        public ViewHolder(View convertView) {
+            textView = (TextView) convertView.findViewById(R.id.item_name);
+            position = 0;
         }
     }
 
@@ -211,28 +247,31 @@ public class TransitionEffectsFragment extends Fragment {
 
         @Override
         public View getView(int position, View convertView, ViewGroup parent) {
-            LayoutInflater inflater = (LayoutInflater) mContext
-                    .getSystemService(Context.LAYOUT_INFLATER_SERVICE);
-            convertView = inflater.inflate(R.layout.settings_pane_list_item,
-                    parent, false);
-            TextView textView = (TextView) convertView
-                    .findViewById(R.id.item_name);
+            final ViewHolder viewHolder;
+            if (convertView == null) {
+                convertView = LayoutInflater.from(mContext)
+                        .inflate(R.layout.settings_pane_list_item, parent, false);
+                viewHolder = new ViewHolder(convertView);
+                convertView.setTag(viewHolder);
+            } else {
+                viewHolder = (ViewHolder) convertView.getTag();
+            }
 
             // RTL
             Configuration config = getResources().getConfiguration();
             if (config.getLayoutDirection() == View.LAYOUT_DIRECTION_RTL) {
-                textView.setGravity(Gravity.RIGHT);
+                viewHolder.textView.setGravity(Gravity.RIGHT);
             }
 
-            textView.setText(titles[position]);
+            viewHolder.textView.setText(titles[position]);
             // Set Selected State
             if (position == mCurrentPosition) {
                 mCurrentSelection = convertView;
                 setSelected(mCurrentSelection);
             }
 
+            viewHolder.position = position;
             convertView.setOnClickListener(mSettingsItemListener);
-            convertView.setTag(position);
             return convertView;
         }
     }
