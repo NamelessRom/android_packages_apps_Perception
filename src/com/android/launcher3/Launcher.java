@@ -71,6 +71,7 @@ import android.os.Bundle;
 import android.os.Environment;
 import android.os.Handler;
 import android.os.Message;
+import android.os.PowerManager;
 import android.os.StrictMode;
 import android.os.SystemClock;
 import android.os.UserHandle;
@@ -282,6 +283,8 @@ public class Launcher extends Activity
     private final BroadcastReceiver mCloseSystemDialogsReceiver
             = new CloseSystemDialogsIntentReceiver();
     private final ContentObserver mWidgetObserver = new AppWidgetResetObserver();
+
+    private PowerManager mPowerManager;
 
     private LayoutInflater mInflater;
 
@@ -597,6 +600,13 @@ public class Launcher extends Activity
     public boolean setLauncherCallbacks(LauncherCallbacks callbacks) {
         mLauncherCallbacks = callbacks;
         return true;
+    }
+
+    public PowerManager getPowerManager() {
+        if (mPowerManager == null) {
+            mPowerManager = (PowerManager) getSystemService(Context.POWER_SERVICE);
+        }
+        return mPowerManager;
     }
 
     @Override
@@ -4046,6 +4056,10 @@ public class Launcher extends Activity
                     // we waited for a layout/draw pass
                     if (mStateAnimation != stateAnimation)
                         return;
+
+                    // boost the cpu as trouble is ahead
+                    getPowerManager().cpuBoost(750000);
+
                     dispatchOnLauncherTransitionStart(fromView, animated, false);
                     dispatchOnLauncherTransitionStart(toView, animated, false);
 
@@ -4371,6 +4385,10 @@ public class Launcher extends Activity
                     // we waited for a layout/draw pass
                     if (mStateAnimation != stateAnimation)
                         return;
+
+                    // boost the cpu as trouble is ahead
+                    getPowerManager().cpuBoost(750000);
+
                     dispatchOnLauncherTransitionStart(fromView, animated, false);
                     dispatchOnLauncherTransitionStart(toView, animated, false);
 
