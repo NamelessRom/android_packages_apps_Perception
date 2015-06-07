@@ -2592,7 +2592,7 @@ public class Workspace extends SmoothPagedView
         }
         mLauncher.updateVoiceButtonProxyVisible(false);
 
-        if (stateIsNormal || stateIsNormalHidden) {
+        if (stateIsNormal) {
             animateBackgroundGradient(0f, animated);
         } else {
             animateBackgroundGradient(getResources().getInteger(
