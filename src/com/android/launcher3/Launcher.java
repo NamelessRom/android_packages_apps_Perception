@@ -3581,6 +3581,7 @@ public class Launcher extends Activity
             }
 
             View topBar = toView.findViewById(R.id.apps_top_bar);
+            topBar.setLayerType(View.LAYER_TYPE_HARDWARE, null);
             topBar.setAlpha(0.01f);
             ObjectAnimator topBarAlpha =
                     ObjectAnimator.ofFloat(topBar, "alpha", 1f);
