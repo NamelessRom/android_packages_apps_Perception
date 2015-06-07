@@ -3586,12 +3586,14 @@ public class Launcher extends Activity
             }
 
             View topBar = toView.findViewById(R.id.apps_top_bar);
+            topBar.setLayerType(View.LAYER_TYPE_HARDWARE, null);
             topBar.setAlpha(0.01f);
             ObjectAnimator topBarAlpha =
                     ObjectAnimator.ofFloat(topBar, "alpha", 1f);
             topBarAlpha.setDuration(revealDuration);
 
             View pageIndicators = toView.findViewById(R.id.apps_customize_page_indicator);
+            pageIndicators.setLayerType(View.LAYER_TYPE_HARDWARE, null);
             pageIndicators.setAlpha(0.01f);
             ObjectAnimator indicatorsAlpha =
                     ObjectAnimator.ofFloat(pageIndicators, "alpha", 1f);
@@ -3633,6 +3635,8 @@ public class Launcher extends Activity
                     if (page != null) {
                         page.setLayerType(View.LAYER_TYPE_NONE, null);
                     }
+                    topBar.setLayerType(View.LAYER_TYPE_NONE, null);
+                    pageIndicators.setLayerType(View.LAYER_TYPE_NONE, null);
                     content.setPageBackgroundsVisible(true);
 
                     // Hide the search bar
@@ -3832,6 +3836,7 @@ public class Launcher extends Activity
                 }
 
                 final View topBar = fromView.findViewById(R.id.apps_top_bar);
+                topBar.setLayerType(View.LAYER_TYPE_HARDWARE, null);
                 topBar.setAlpha(1f);
                 ObjectAnimator topBarAlpha =
                         LauncherAnimUtils.ofFloat(topBar, "alpha", 0f);
@@ -3839,6 +3844,7 @@ public class Launcher extends Activity
                 topBarAlpha.setInterpolator(new DecelerateInterpolator(1.5f));
 
                 View pageIndicators = fromView.findViewById(R.id.apps_customize_page_indicator);
+                pageIndicators.setLayerType(View.LAYER_TYPE_HARDWARE, null);
                 pageIndicators.setAlpha(1f);
                 ObjectAnimator indicatorsAlpha =
                         LauncherAnimUtils.ofFloat(pageIndicators, "alpha", 0f);
@@ -3897,6 +3903,8 @@ public class Launcher extends Activity
                     if (page != null) {
                         page.setLayerType(View.LAYER_TYPE_NONE, null);
                     }
+                    topBar.setLayerType(View.LAYER_TYPE_NONE, null);
+                    pageIndicators.setLayerType(View.LAYER_TYPE_NONE, null);
                     content.setPageBackgroundsVisible(true);
                     // Unhide side pages
                     int count = content.getChildCount();
