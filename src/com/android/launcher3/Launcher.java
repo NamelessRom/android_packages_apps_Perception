@@ -326,6 +326,12 @@ public class Launcher extends Activity
 
     private boolean mWorkspaceLoading = true;
 
+<<<<<<< HEAD
+=======
+    private boolean mDynamicGridUpdateRequired = false;
+    private boolean mDynamicGridResizeRequired = false;
+
+>>>>>>> cae9521... Fix unintended dynamic grid resize side effects.
     private boolean mPaused = true;
     private boolean mRestoring;
     private boolean mWaitingForResult;
@@ -428,7 +434,7 @@ public class Launcher extends Activity
     Runnable mUpdateDynamicGridRunnable = new Runnable() {
         @Override
         public void run() {
-            updateDynamicGrid();
+            updateDynamicGrid(false);
         }
     };
 
@@ -440,7 +446,7 @@ public class Launcher extends Activity
                 return;
             }
 
-            updateDynamicGrid();
+            updateDynamicGrid(false);
         }
     };
 
@@ -1289,6 +1295,7 @@ public class Launcher extends Activity
         return mDrawerType;
     }
 
+<<<<<<< HEAD
     public void onClickSortModeButton(View v) {
         final PopupMenu popupMenu = new PopupMenu(this, v);
         final Menu menu = popupMenu.getMenu();
@@ -1303,6 +1310,99 @@ public class Launcher extends Activity
             case InstallTime:
                 menu.findItem(R.id.sort_mode_install_time).setChecked(true);
                 break;
+=======
+    public void onClickDynamicGridSizeButton() {
+        FragmentManager fragmentManager = getFragmentManager();
+        FragmentTransaction fragmentTransaction = fragmentManager.beginTransaction();
+
+        mDynamicGridSizeFragment = new DynamicGridSizeFragment();
+        fragmentTransaction.replace(R.id.launcher, mDynamicGridSizeFragment,
+                DynamicGridSizeFragment.DYNAMIC_GRID_SIZE_FRAGMENT);
+        fragmentTransaction.commit();
+    }
+
+    public void setDynamicGridSize(DeviceProfile.GridSize size) {
+        int gridSize = SettingsProvider.getIntCustomDefault(this,
+                SettingsProvider.SETTINGS_UI_DYNAMIC_GRID_SIZE, 0);
+        boolean customValuesChanged = false;
+        if (gridSize == size.getValue() && size == DeviceProfile.GridSize.Custom) {
+            int tempRows = SettingsProvider.getIntCustomDefault(this,
+                    SettingsProvider.SETTINGS_UI_HOMESCREEN_ROWS, (int)mGrid.numRows);
+            int tempColumns = SettingsProvider.getIntCustomDefault(this,
+                    SettingsProvider.SETTINGS_UI_HOMESCREEN_COLUMNS, (int)mGrid.numColumns);
+            if (tempColumns != (int) mGrid.numColumns || tempRows != (int) mGrid.numRows) {
+                customValuesChanged = true;
+            }
+        }
+
+        if (gridSize != size.getValue() || customValuesChanged) {
+            SettingsProvider.putInt(this,
+                    SettingsProvider.SETTINGS_UI_DYNAMIC_GRID_SIZE, size.getValue());
+
+            setUpdateDynamicGrid(true);
+        }
+
+        mOverviewSettingsPanel.notifyDataSetInvalidated();
+
+        FragmentTransaction fragmentTransaction = getFragmentManager().beginTransaction();
+        Configuration config = getResources().getConfiguration();
+        if(config.getLayoutDirection() == View.LAYOUT_DIRECTION_RTL) {
+            fragmentTransaction
+                    .setCustomAnimations(0, R.anim.exit_out_left);
+        } else {
+            fragmentTransaction
+                    .setCustomAnimations(0, R.anim.exit_out_right);
+        }
+        fragmentTransaction
+                .remove(mDynamicGridSizeFragment).commit();
+
+        mDarkPanel.setVisibility(View.VISIBLE);
+        ObjectAnimator anim = ObjectAnimator.ofFloat(
+                mDarkPanel, "alpha", 0.3f, 0.0f);
+        anim.start();
+        anim.addListener(mAnimatorListener);
+
+    }
+
+    public void onClickTransitionEffectButton(View v, final boolean pageOrDrawer) {
+        Bundle bundle = new Bundle();
+        bundle.putBoolean(TransitionEffectsFragment.PAGE_OR_DRAWER_SCROLL_SELECT,
+                pageOrDrawer);
+        FragmentManager fragmentManager = getFragmentManager();
+        FragmentTransaction fragmentTransaction = fragmentManager.beginTransaction();
+
+        TransitionEffectsFragment tef = new TransitionEffectsFragment();
+        tef.setArguments(bundle);
+        fragmentTransaction.setCustomAnimations(0, 0);
+        fragmentTransaction.replace(R.id.launcher, tef,
+                TransitionEffectsFragment.TRANSITION_EFFECTS_FRAGMENT);
+        fragmentTransaction.commit();
+    }
+
+    public void setTransitionEffect(boolean pageOrDrawer, String newTransitionEffect) {
+        String mSettingsProviderValue = pageOrDrawer ?
+                SettingsProvider.SETTINGS_UI_DRAWER_SCROLLING_TRANSITION_EFFECT
+                : SettingsProvider.SETTINGS_UI_HOMESCREEN_SCROLLING_TRANSITION_EFFECT;
+        PagedView pagedView = pageOrDrawer ? mAppsCustomizeContent : mWorkspace;
+
+        SettingsProvider
+                .get(getApplicationContext())
+                .edit()
+                .putString(mSettingsProviderValue,
+                        newTransitionEffect).commit();
+        TransitionEffect.setFromString(pagedView, newTransitionEffect);
+
+        mOverviewSettingsPanel.notifyDataSetInvalidated();
+
+        FragmentTransaction fragmentTransaction = getFragmentManager().beginTransaction();
+        Configuration config = getResources().getConfiguration();
+        if(config.getLayoutDirection() == View.LAYOUT_DIRECTION_RTL) {
+            fragmentTransaction
+                    .setCustomAnimations(0, R.anim.exit_out_left);
+        } else {
+            fragmentTransaction
+                    .setCustomAnimations(0, R.anim.exit_out_right);
+>>>>>>> cae9521... Fix unintended dynamic grid resize side effects.
         }
         popupMenu.setOnMenuItemClickListener(new PopupMenu.OnMenuItemClickListener() {
             public boolean onMenuItemClick(MenuItem item) {
@@ -5820,11 +5920,11 @@ public class Launcher extends Activity
         return effect == null ? TransitionEffect.TRANSITION_EFFECT_NONE : effect.getName();
     }
 
-    public void updateDynamicGrid() {
-        updateDynamicGrid(mWorkspace.getRestorePage());
+    public void updateDynamicGrid(boolean resizeGridIfNeeded) {
+        updateDynamicGrid(mWorkspace.getRestorePage(), resizeGridIfNeeded);
     }
 
-    public void updateDynamicGrid(int page) {
+    public void updateDynamicGrid(int page, boolean resizeGridIfNeeded) {
         mSearchDropTargetBar.setupQSB(Launcher.this);
 
         initializeDynamicGrid(true);
@@ -5833,12 +5933,15 @@ public class Launcher extends Activity
 
         // Synchronized reload
         mModel.resetLoadedState(true, true);
-        mModel.startLoader(true, page);
+        int flag = resizeGridIfNeeded ? LauncherModel.LOADER_FLAG_RESIZE_GRID :
+                LauncherModel.LOADER_FLAG_NONE;
+        mModel.startLoader(true, page, flag);
         mWorkspace.updateCustomContentVisibility();
 
         mAppDrawerAdapter.reset();
     }
 
+<<<<<<< HEAD
     public void updateStuffIfNeeded() {
         updateDrawerTypeIfNeeded();
         updateGridIfNeeded();
@@ -5926,6 +6029,17 @@ public class Launcher extends Activity
             mIconCache.reloadIconPack();
             mModel.forceReload();
             LauncherConfiguration.flushIconCache = false;
+=======
+    public void setUpdateDynamicGrid(boolean resizeDynamicGrid) {
+        mDynamicGridUpdateRequired = true;
+        mDynamicGridResizeRequired = resizeDynamicGrid;
+    }
+
+    public boolean updateGridIfNeeded() {
+        if (mDynamicGridUpdateRequired) {
+            updateDynamicGrid(mWorkspace.getCurrentPage(), mDynamicGridResizeRequired);
+            mDynamicGridUpdateRequired = false;
+>>>>>>> cae9521... Fix unintended dynamic grid resize side effects.
             return true;
         }
 

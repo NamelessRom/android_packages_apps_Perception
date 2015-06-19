@@ -98,6 +98,11 @@ public class LauncherModel extends BroadcastReceiver
     public static final boolean UPGRADE_USE_MORE_APPS_FOLDER = false;
     public static final int LOADER_FLAG_NONE = 0;
     public static final int LOADER_FLAG_CLEAR_WORKSPACE = 1 << 0;
+<<<<<<< HEAD
+=======
+    public static final int LOADER_FLAG_MIGRATE_SHORTCUTS = 1 << 1;
+    public static final int LOADER_FLAG_RESIZE_GRID = 1 << 2;
+>>>>>>> cae9521... Fix unintended dynamic grid resize side effects.
 
     private static final int ITEMS_CHUNK = 6; // batch size for the workspace icons
     private static final long INVALID_SCREEN_ID = -1L;
@@ -1806,7 +1811,8 @@ public class LauncherModel extends BroadcastReceiver
 
         // check & update map of what's occupied; used to discard overlapping/invalid items
         private boolean checkItemPlacement(HashMap<Long, ItemInfo[][]> occupied, ItemInfo item,
-                                           AtomicBoolean deleteOnInvalidPlacement) {
+                                           AtomicBoolean deleteOnInvalidPlacement,
+                                           boolean shouldResizeAndUpdateDB) {
             LauncherAppState app = LauncherAppState.getInstance();
             DeviceProfile grid = app.getDynamicGrid().getDeviceProfile();
             final int countX = (int) grid.numColumns;
@@ -1863,12 +1869,21 @@ public class LauncherModel extends BroadcastReceiver
             // available position.
             if (item.cellX < 0 || item.cellY < 0 || item.cellX + item.spanX > countX
                     || item.cellY + item.spanY > countY) {
+                // If we won't be resizing the grid, then just return, this item does not fit.
+                if (!shouldResizeAndUpdateDB) {
+                    Log.e(TAG, "Error loading shortcut " + item
+                            + " into cell (" + containerIndex + "-" + item.screenId + ":"
+                            + item.cellX + "," + item.cellY
+                            + ") out of screen bounds ( " + countX + "x" + countY + ")");
+                    return false;
+                }
+
                 if (item.itemType != LauncherSettings.Favorites.ITEM_TYPE_APPWIDGET) {
-                    // Place the item at 0 0 of screen 0
+                    // Place the item at 0 0 of screen 1
                     // if items overlap here, they will be moved later on
                     item.cellX = 0;
                     item.cellY = 0;
-                    item.screenId = 0;
+                    item.screenId = 1;
                     item.wasMovedDueToReducedSpace = true;
                     item.requiresDbUpdate = true;
                 } else {
@@ -1910,6 +1925,16 @@ public class LauncherModel extends BroadcastReceiver
             // Check if any workspace icons overlap with each other
             for (int x = item.cellX; x < (item.cellX + item.spanX); x++) {
                 for (int y = item.cellY; y < (item.cellY + item.spanY); y++) {
+                    // If we are not resizing the grid, overlapping items should be rejected.
+                    if (!shouldResizeAndUpdateDB && screens[x][y] != null) {
+                        Log.e(TAG, "Error loading shortcut " + item
+                                + " into cell (" + containerIndex + "-" + item.screenId + ":"
+                                + x + "," + y
+                                + ") occupied by "
+                                + screens[x][y]);
+                        return false;
+                    }
+
                     if (screens[x][y] != null) {
                         ItemInfo occupiedItem = screens[x][y];
                         // If an item is overlapping another because one of them
@@ -1957,7 +1982,8 @@ public class LauncherModel extends BroadcastReceiver
             for (int x = item.cellX; x < (item.cellX + item.spanX); x++) {
                 for (int y = item.cellY; y < (item.cellY + item.spanY); y++) {
                     screens[x][y] = item;
-                    if (item.itemType == LauncherSettings.Favorites.ITEM_TYPE_APPWIDGET) {
+                    if (item.itemType == LauncherSettings.Favorites.ITEM_TYPE_APPWIDGET
+                            && shouldResizeAndUpdateDB) {
                         // fill up the entire grid where the widget technically is
                         for (int spanX = x; spanX < item.spanX; spanX++) {
                             screens[spanX][y] = item;
@@ -2004,6 +2030,8 @@ public class LauncherModel extends BroadcastReceiver
             DeviceProfile grid = app.getDynamicGrid().getDeviceProfile();
             int countX = (int) grid.numColumns;
             int countY = (int) grid.numRows;
+
+            boolean shouldResize = ((mFlags & LOADER_FLAG_RESIZE_GRID) != 0);
 
             if ((mFlags & LOADER_FLAG_CLEAR_WORKSPACE) != 0) {
                 Launcher.addDumpLog(TAG, "loadWorkspace: resetting launcher database", true);
@@ -2256,7 +2284,8 @@ public class LauncherModel extends BroadcastReceiver
 
                                     // check & update map of what's occupied
                                     deleteOnInvalidPlacement.set(false);
-                                    if (!checkItemPlacement(occupied, info, deleteOnInvalidPlacement)) {
+                                    if (!checkItemPlacement(occupied, info,
+                                            deleteOnInvalidPlacement, shouldResize)) {
                                         if (deleteOnInvalidPlacement.get()) {
                                             itemsToRemove.add(id);
                                         }
@@ -2303,7 +2332,7 @@ public class LauncherModel extends BroadcastReceiver
                                 // check & update map of what's occupied
                                 deleteOnInvalidPlacement.set(false);
                                 if (!checkItemPlacement(occupied, folderInfo,
-                                        deleteOnInvalidPlacement)) {
+                                        deleteOnInvalidPlacement, shouldResize)) {
                                     if (deleteOnInvalidPlacement.get()) {
                                         itemsToRemove.add(id);
                                     }
@@ -2416,7 +2445,7 @@ public class LauncherModel extends BroadcastReceiver
                                     // check & update map of what's occupied
                                     deleteOnInvalidPlacement.set(false);
                                     if (!checkItemPlacement(occupied, appWidgetInfo,
-                                            deleteOnInvalidPlacement)) {
+                                            deleteOnInvalidPlacement, shouldResize)) {
                                         if (deleteOnInvalidPlacement.get()) {
                                             itemsToRemove.add(id);
                                         }
@@ -2555,6 +2584,17 @@ public class LauncherModel extends BroadcastReceiver
 
 
                     updateWorkspaceScreenOrder(context, sBgWorkspaceScreens);
+                }
+
+                // If any items have been shifted and require a DB update, update them in the DB.
+                if (shouldResize) {
+                    for (ItemInfo info : sBgWorkspaceItems) {
+                        if (info != null && info.requiresDbUpdate) {
+                            info.requiresDbUpdate = false;
+                            LauncherModel.modifyItemInDatabase(mContext, info, info.container,
+                                    info.screenId, info.cellX, info.cellY, info.spanX, info.spanY);
+                        }
+                    }
                 }
 
                 if (DEBUG_LOADERS) {
