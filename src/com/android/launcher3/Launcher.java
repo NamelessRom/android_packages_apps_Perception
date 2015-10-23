@@ -5163,6 +5163,12 @@ public class Launcher extends Activity
         mGrid.layoutSearchBar(this);
     }
 
+    public void bindSearchBar() {
+        if (mSearchDropTargetBar != null) {
+            mSearchDropTargetBar.setQsbSearchBar(getQsbBar());
+        }
+    }
+
     /**
      * Add the icons for all apps.
      * <p/>
