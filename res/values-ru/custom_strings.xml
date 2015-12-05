@@ -16,51 +16,70 @@
      limitations under the License.
 -->
 <resources>
-  <string name="preferences_text">Настройки</string>
-  <string name="gesture_settings">Жесты</string>
-  <string name="gesture_summary">Задать различные действия для жестов</string>
-  <string name="gesture_choose">Выбрать действие</string>
-  <string name="gesture_swipe_down">Свайп вниз</string>
-  <string name="gesture_swipe_up">Свайп вверх</string>
-  <string name="gesture_special">Особые</string>
-  <string name="left">По левой стороне</string>
-  <string name="middle">Посередине</string>
-  <string name="right">По правой стороне</string>
-  <string name="gesture_double_tap">Двойное нажатие</string>
-  <string name="gesture_nothing">Ничего</string>
-  <string name="gesture_turn_screen_off">Выключить экран</string>
-  <string name="gesture_expand_status_bar">Разверните строку состояния</string>
-  <string name="gesture_toggle_torch">Фонарик</string>
-  <string name="gesture_toggle_silent_mode">Переключение в тихий режим</string>
-  <string name="gesture_music_play_pause">Воспроизведение/пауза музыки</string>
-  <string name="gesture_music_previous">Предыдущий трек</string>
-  <string name="gesture_music_next">Следующий трек</string>
-  <string name="gesture_toggle_last_app">Переключ на последнее приложение</string>
-  <string name="global_settings">Глобальные параметры</string>
-  <string name="screen_orientation">Ориентация экрана</string>
-  <string name="automatic">Автоматический</string>
-  <string name="portrait">Вертикальная ориентация</string>
-  <string name="portrait_reverse">Вертикальная ориентация (вверх ногами)</string>
-  <string name="landscape">Горизонтальная ориентация</string>
-  <string name="landscape_reverse">Альбомная ориентация (вверх ногами)</string>
-  <string name="hide_status_bar_title">Скрыть строку состояния</string>
-  <string name="hide_icon_labels">Скрыть подписи значков</string>
-  <string name="hide_icon_labels_drawer_summary">Удаляет подписи иконок приложений в меню приложений</string>
-  <string name="hide_icon_labels_home_summary">Удаляет подписи иконок приложений на домашнем экране</string>
-  <string name="show_search_bar">Показать панель поиска</string>
-  <string name="show_search_bar_summary">Показывает панель поиска на домашнем экране, если установлен Google Now</string>
-  <string name="scrolling_wallpaper_summary">Прокручивает обои вместе c домашними экранами</string>
-  <string name="scroll_effect_drawer_summary">Настроить эффект при прокрутке в меню приложений</string>
-  <string name="scroll_effect_home_summary">Настроить эффект при прокрутке домашних экранов</string>
-  <string name="grid_size_summary">Настройте размер сетки домашнего экрана</string>
-  <string name="protected_app_summary">Настроить защищенные приложения</string>
-  <string name="no_last_app">Последнее приложение не найдено!</string>
-  <string name="hide_apps_top_bar">Спрятать верхнюю панель</string>
-  <string name="hide_apps_top_bar_summary">Верхняя панель, содержащая элементы строки поиска</string>
-  <string name="icon_pack_title">Наборы значков</string>
-  <string name="icon_pack_summary">Восстановление набора иконок по умолчанию</string>
-  <string name="no_iconpacks_summary">Наборы значков не установлены</string>
-  <string name="default_icon_pack_title">Системные иконки</string>
-  <string name="dialog_pick_icon_pack_title">Выберите набор иконок</string>
-  <string name="hint_filter_apps">Фильтр приложений...</string>
+    <string name="preferences_text">Настройки</string>
+    <!-- Gestures -->
+    <string name="gesture_settings">Жесты</string>
+    <string name="gesture_summary">Задать различные действия для жестов</string>
+    <string name="gesture_choose">Выбрать действие</string>
+    <!-- Gesture categories -->
+    <string name="gesture_swipe_down">Свайп вниз</string>
+    <string name="gesture_swipe_up">Свайп вверх</string>
+    <string name="gesture_special">Особые</string>
+    <!-- Gesture directions -->
+    <string name="left">Слева:</string>
+    <string name="middle">Посередине:</string>
+    <string name="right">Справа:</string>
+    <!-- Gesture triggers -->
+    <string name="gesture_double_tap">Двойное нажатие</string>
+    <!-- Gesture actions -->
+    <string name="gesture_nothing">Ничего</string>
+    <string name="gesture_turn_screen_off">Выключить экран</string>
+    <string name="gesture_expand_status_bar">Строка состояния</string>
+    <string name="gesture_toggle_torch">Фонарик</string>
+    <string name="gesture_toggle_silent_mode">В тихий режим</string>
+    <string name="gesture_music_play_pause">Играть/пауза музыки</string>
+    <string name="gesture_music_previous">Предыдущий трек</string>
+    <string name="gesture_music_next">Следующий трек</string>
+    <string name="gesture_toggle_last_app">Последнее приложение</string>
+
+    <string name="global_settings">Глобальные параметры</string>
+
+    <string name="screen_orientation">Ориентация экрана</string>
+    <string name="automatic">Автоматический</string>
+    <string name="portrait">Вертикальная ориентация</string>
+    <string name="portrait_reverse">Вертикальная ориентация (вверх ногами)</string>
+    <string name="landscape">Горизонтальная ориентация</string>
+    <string name="landscape_reverse">Альбомная ориентация (вверх ногами)</string>
+
+    <string name="hide_status_bar_title">Скрыть строку состояния</string>
+    <string name="hide_icon_labels">Скрыть подписи значков</string>
+    <string name="hide_icon_labels_drawer_summary">Удаляет подписи иконок приложений в меню приложений</string>
+    <string name="hide_icon_labels_home_summary">Удаляет подписи иконок приложений на домашнем экране</string>
+    <string name="show_search_bar">Показать панель поиска</string>
+    <string name="show_search_bar_summary">Показывает панель поиска на домашнем экране, если установлен Google Now</string>
+
+    <string name="scrolling_wallpaper_summary">Прокручивает обои вместе c домашними экранами</string>
+    <string name="scroll_effect_drawer_summary">Настроить эффект при прокрутке в меню приложений</string>
+    <string name="scroll_effect_home_summary">Настроить эффект при прокрутке домашних экранов</string>
+    <string name="grid_size_summary">Настройте размер сетки домашнего экрана</string>
+    <string name="protected_app_summary">Настроить защищенные приложения</string>
+
+    <string name="no_last_app">Последнее приложение не найдено!</string>
+
+    <string name="hide_apps_top_bar">Спрятать верхнюю панель</string>
+    <string name="hide_apps_top_bar_summary">Верхняя панель, содержащая элементы строки поиска</string>
+
+    <!-- Icon pack support -->
+    <string name="icon_pack_title">Наборы значков</string>
+    <string name="icon_pack_summary">Восстановление набора иконок по умолчанию</string>
+    <string name="no_iconpacks_summary">Наборы значков не установлены</string>
+    <string name="default_icon_pack_title">Системные иконки</string>
+    <string name="dialog_pick_icon_pack_title">Выберите набор иконок</string>
+
+    <string name="hint_filter_apps">Фильтр приложений...</string>
+
+    <!-- Untranslated strings / CM strings -->
+    <!--                                   -->
+    <!-- Text for manage apps button -->
+    <string name="manage_apps_button_text">Приложения</string>
 </resources>
