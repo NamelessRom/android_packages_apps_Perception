@@ -78,7 +78,7 @@ public class DefaultAppSearchAlgorithm {
         for (int qi = 0; qi < queryWords.length; qi++) {
             boolean foundMatch = false;
             for (int i = 0; i < words.length; i++) {
-                if (words[i].startsWith(queryWords[qi])) {
+                if (words[i].contains(queryWords[qi])) {
                     foundMatch = true;
                     break;
                 }
