@@ -2134,8 +2134,12 @@ public class Launcher extends Activity
         removeWidgetToAutoAdvance(launcherInfo.hostView);
         launcherInfo.hostView = null;
         AppWidgetProviderInfo info = mAppWidgetManager.getAppWidgetInfo(launcherInfo.appWidgetId);
-        String packageName = info.providerInfo.packageName;
-        LauncherApplication.getLauncherStats().sendWidgetRemoveEvent(packageName);
+        if (info != null) {
+            String packageName = info.providerInfo.packageName;
+            LauncherApplication.getLauncherStats().sendWidgetRemoveEvent(packageName);
+        } else if (DEBUG_WIDGETS) {
+            Log.w(TAG, "No info for appWidgetId " + launcherInfo.appWidgetId + ".");
+        }
     }
 
     public void showOutOfSpaceMessage(boolean isHotseatLayout) {
