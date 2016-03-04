@@ -2291,6 +2291,8 @@ public class Launcher extends Activity
         if (info != null) {
             String packageName = info.providerInfo.packageName;
             LauncherApplication.getLauncherStats().sendWidgetRemoveEvent(packageName);
+        } else if (DEBUG_WIDGETS) {
+            Log.w(TAG, "No info for appWidgetId " + launcherInfo.appWidgetId + ".");
         }
     }
 
